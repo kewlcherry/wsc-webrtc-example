@@ -181,9 +181,9 @@ function wsConnect(url)
 		if (newAPI)
 		{
 			var localTracks = localStream.getTracks();
-			for(localTrack in localTracks)
+			for(var localTrack of localTracks)
 			{
-				peerConnection.addTrack(localTracks[localTrack], localStream);
+				peerConnection.addTrack(localTrack, localStream);
 			}
 		}
 		else
@@ -191,7 +191,7 @@ function wsConnect(url)
 			peerConnection.addStream(localStream);
 		}
 
-		peerConnection.createOffer(gotDescription, errorHandler);
+		peerConnection.createOffer().then(gotDescription).catch(errorHandler);
 
 
 	}
@@ -228,19 +228,17 @@ function wsConnect(url)
 			{
 				console.log('sdp: '+msgJSON['sdp']);
 
-				peerConnection.setRemoteDescription(new RTCSessionDescription(sdpData), function() {
-					//peerConnection.createAnswer(gotDescription, errorHandler);
-				}, errorHandler);
+				peerConnection.setRemoteDescription(new RTCSessionDescription(sdpData)).catch(errorHandler);
 			}
 
 			var iceCandidates = msgJSON['iceCandidates'];
 			if (iceCandidates !== undefined)
 			{
-				for(var index in iceCandidates)
+				for(var iceCandidate of iceCandidates)
 				{
-					console.log('iceCandidates: '+iceCandidates[index]);
+					console.log('iceCandidates: '+iceCandidate);
 
-					peerConnection.addIceCandidate(new RTCIceCandidate(iceCandidates[index]));
+					peerConnection.addIceCandidate(new RTCIceCandidate(iceCandidate));
 				}
 			}
 		}
@@ -350,11 +348,14 @@ function gotDescription(description)
 
 	console.log('gotDescription: '+JSON.stringify({'sdp': description}));
 
-    peerConnection.setLocalDescription(description, function () {
-
+	return peerConnection.setLocalDescription(description)
+	.then(() => {
 		wsConnection.send('{"direction":"publish", "command":"sendOffer", "streamInfo":'+JSON.stringify(streamInfo)+', "sdp":'+JSON.stringify(description)+', "userData":'+JSON.stringify(userData)+'}');
-
-    }, function() {console.log('set description error')});
+	})
+	.catch(err => {
+		console.log('set local description error:');
+		console.log(err);
+	});
 }
 
 function addAudio(sdpStr, audioLine)
@@ -365,10 +366,8 @@ function addAudio(sdpStr, audioLine)
 	var sdpStrRet = '';
 	var done = false;
 
-	for(var sdpIndex in sdpLines)
+	for(var sdpLine of sdpLines)
 	{
-		var sdpLine = sdpLines[sdpIndex];
-
 		if (sdpLine.length <= 0)
 			continue;
 
@@ -398,10 +397,8 @@ function addVideo(sdpStr, videoLine)
 	var rtcpSize = false;
 	var rtcpMux = false;
 
-	for(var sdpIndex in sdpLines)
+	for(var sdpLine of sdpLines)
 	{
-		var sdpLine = sdpLines[sdpIndex];
-
 		if (sdpLine.length <= 0)
 			continue;
 
@@ -417,10 +414,8 @@ function addVideo(sdpStr, videoLine)
 
 	}
 
-	for(var sdpIndex in sdpLines)
+	for(var sdpLine of sdpLines)
 	{
-		var sdpLine = sdpLines[sdpIndex];
-
 		sdpStrRet +=sdpLine;
 		sdpStrRet += '\r\n';
 
@@ -458,10 +453,8 @@ function enhanceSDP(sdpStr, enhanceData)
 	// so we have to doing a little mundging to make it all work
 	if ( !sdpStr.includes("THIS_IS_SDPARTA") || videoChoice.includes("VP9") )
 	{
-		for(var sdpIndex in sdpLines)
+		for(var sdpLine of sdpLines)
 		{
-			var sdpLine = sdpLines[sdpIndex];
-
 			if (sdpLine.length <= 0)
 				continue;
 
@@ -480,28 +473,25 @@ function enhanceSDP(sdpStr, enhanceData)
 		sdpStrRet = '';
 	}
 
-	for(var sdpIndex in sdpLines)
+	for(var sdpLine of sdpLines)
 	{
-		var sdpLine = sdpLines[sdpIndex];
-
 		if (sdpLine.length <= 0)
 			continue;
 
 		if ( sdpLine.indexOf("m=audio") ==0 && audioIndex !=-1 )
 		{
 			audioMLines = sdpLine.split(" ");
-			sdpStrRet+=audioMLines[0]+" "+audioMLines[1]+" "+audioMLines[2]+" "+audioIndex+"\r\n";
-			continue;
+			sdpStrRet+=audioMLines[0]+" "+audioMLines[1]+" "+audioMLines[2]+" "+audioIndex;
 		}
-
-		if ( sdpLine.indexOf("m=video") == 0 && videoIndex !=-1 )
+		else if ( sdpLine.indexOf("m=video") == 0 && videoIndex !=-1 )
 		{
 			audioMLines = sdpLine.split(" ");
-			sdpStrRet+=audioMLines[0]+" "+audioMLines[1]+" "+audioMLines[2]+" "+videoIndex+"\r\n";
-			continue;
+			sdpStrRet+=audioMLines[0]+" "+audioMLines[1]+" "+audioMLines[2]+" "+videoIndex;
 		}
-
-		sdpStrRet += sdpLine;
+		else
+		{
+			sdpStrRet += sdpLine;
+		}
 
 		if (sdpLine.indexOf("m=audio") === 0)
 		{
@@ -575,7 +565,7 @@ function enhanceSDP(sdpStr, enhanceData)
 		}
 		sdpStrRet += '\r\n';
 	}
-	console.log("Resuling SDP: "+sdpStrRet);
+	console.log("Resulting SDP: "+sdpStrRet);
 	return sdpStrRet;
 }
 

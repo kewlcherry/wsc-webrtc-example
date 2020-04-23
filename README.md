@@ -21,7 +21,7 @@ Web Real-time Communication (WebRTC) is an open source project to enable real-ti
 
 The example files can be used to publish a WebRTC stream to Wowza Streaming Cloud. In order for the example to work properly, the transcoder's stream extension must be set to .json. Additionally, the files must be hosted on a webserver utilizing SSL encryption.
 
-Further information on how to implement this example can be found in the **Test the connection** section of the following articles:
+For more information on how to implement this example, see the following articles:
 
 * [Connect a WebRTC stream to Wowza Streaming Cloud](https://www.wowza.com/docs/connect-a-webrtc-stream-to-wowza-streaming-cloud)
 * [Connect a WebRTC stream to Wowza Streaming Cloud using the Wowza Streaming Cloud REST API](https://www.wowza.com/docs/connect-a-webrtc-stream-to-wowza-streaming-cloud-using-the-wowza-streaming-cloud-rest-api)
